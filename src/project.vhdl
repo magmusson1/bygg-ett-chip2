@@ -2,20 +2,16 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-entity tt_um_maze_game is
+entity maze_game is
   port (
-        ui_in   : in  std_logic_vector(7 downto 0);
-        uo_out  : out std_logic_vector(7 downto 0);
-        uio_in  : in  std_logic_vector(7 downto 0);
-        uio_out : out std_logic_vector(7 downto 0);
-        uio_oe  : out std_logic_vector(7 downto 0);
-        ena     : in  std_logic;
-        clk     : in  std_logic;
-        rst_n   : in  std_logic
-    );
+    clk    : in  std_logic;
+    rst_n  : in  std_logic;
+    ui_in  : in  std_logic_vector(7 downto 0);
+    uo_out : out std_logic_vector(7 downto 0)
+  );
 end entity;
 
-architecture rtl of tt_um_maze_game is
+architecture rtl of maze_game is
 
   -- GRID konstanter
   constant GRID_SIZE : integer := 8;
@@ -47,7 +43,7 @@ architecture rtl of tt_um_maze_game is
     0 => ('0', '1', '0', '0', '0', '1', '0', '0'),
     1 => ('0', '0', '0', '1', '0', '1', '1', '0'),
     2 => ('1', '1', '1', '0', '0', '0', '0', '0'),
-    3 => ('1', '0', '1', '0', '1', '1', '0', '1'),
+    3 => ('1', '0', '1', '1', '1', '1', '0', '1'),
     4 => ('0', '0', '0', '0', '0', '0', '0', '0'),
     5 => ('0', '1', '1', '0', '1', '1', '1', '0'),
     6 => ('0', '1', '0', '0', '1', '0', '1', '0'),
@@ -145,9 +141,14 @@ begin
     variable px : unsigned(9 downto 0);
     variable py : unsigned(9 downto 0);
 
+    variable light_xpos : integer;
+    variable light_ypos : integer;
+
     variable on_ground : boolean;
     variable on_walls  : boolean;
     variable on_player : boolean;
+
+    variable close_proximity : boolean;
 
   begin
     r <= "00";
@@ -157,6 +158,10 @@ begin
     px := hpos - 144;
     py := vpos - 35;
 
+    light_xpos := xpos;
+    light_ypos := ypos;
+
+    close_proximity := false;
     on_walls := false;
 
     for y in 7 downto 0 loop
@@ -167,6 +172,23 @@ begin
             px < GRID_X + (x + 1) * CELL_SIZE and
             py >= GRID_Y + y * CELL_SIZE and
             py < GRID_Y + (y + 1) * CELL_SIZE);
+
+          case direction is
+            when 0 =>
+              light_ypos := ypos - 1;
+            when 1 => 
+              light_xpos := xpos + 1;
+            when 2 =>
+              light_ypos := ypos + 1;
+            when 3 =>
+              light_xpos := xpos - 1;
+          end case;
+
+          close_proximity := close_proximity or
+            (px >= GRID_X + (light_xpos - 1) * CELL_SIZE and
+            px < GRID_X + (light_xpos + 2) * CELL_SIZE and
+            py >= GRID_Y + (light_ypos - 1) * CELL_SIZE and
+            py < GRID_Y + (light_ypos + 2) * CELL_SIZE);
         end if;
       end loop;
     end loop;
@@ -187,16 +209,32 @@ begin
 
       -- background
       r <= "00";
-      g <= "10";
+      g <= "00";
       b <= "00";
 
       -- walls
-      if on_walls then
+      if on_walls and close_proximity then
+        r <= "10";
+        g <= "10";
+        b <= "10";
+
+      elsif not on_ground and close_proximity then
+        r <= "10";
+        g <= "10";
+        b <= "10";
+
+      elsif on_ground and close_proximity then
+        r <= "01";
+        g <= "01";
+        b <= "01";
+      
+      elsif on_walls and false then
         r <= "00";
         g <= "10";
         b <= "00";
+
         -- grid
-      elsif on_ground then
+      elsif on_ground and false then
         r <= "00";
         g <= "01";
         b <= "00";
