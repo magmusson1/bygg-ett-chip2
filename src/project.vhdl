@@ -3,12 +3,16 @@ library ieee;
   use ieee.numeric_std.all;
 
 entity tt_um_maze_game is
-  port (
-    clk    : in  std_logic;
-    rst_n  : in  std_logic;
-    ui_in  : in  std_logic_vector(7 downto 0);
-    uo_out : out std_logic_vector(7 downto 0)
-  );
+    port (
+        ui_in   : in  std_logic_vector(7 downto 0);
+        uo_out  : out std_logic_vector(7 downto 0);
+        uio_in  : in  std_logic_vector(7 downto 0);
+        uio_out : out std_logic_vector(7 downto 0);
+        uio_oe  : out std_logic_vector(7 downto 0);
+        ena     : in  std_logic;
+        clk     : in  std_logic;
+        rst_n   : in  std_logic
+    );
 end entity;
 
 architecture rtl of tt_um_maze_game is
