@@ -2,7 +2,7 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-entity maze_game is
+entity tt_ummaze_game is
   port (
     clk    : in  std_logic;
     rst_n  : in  std_logic;
@@ -11,7 +11,7 @@ entity maze_game is
   );
 end entity;
 
-architecture rtl of maze_game is
+architecture rtl of tt_um_maze_game is
 
   -- GRID konstanter
   constant GRID_SIZE : integer := 8;
@@ -36,6 +36,8 @@ architecture rtl of maze_game is
   signal last_input : std_logic_vector(3 downto 0) := (others => '0');
 
   signal r, g, b : unsigned(1 downto 0);
+
+  signal proximity_check : std_logic_vector(7 downto 0);
 
   type matrix is array (0 to 7, 0 to 7) of std_logic;
 
@@ -155,6 +157,8 @@ begin
     g <= "00";
     b <= "00";
 
+    proximity_check <= "11111111";
+
     px := hpos - 144;
     py := vpos - 35;
 
@@ -207,45 +211,123 @@ begin
 
     if vis = '1' then
 
-      -- background
-      r <= "00";
-      g <= "00";
-      b <= "00";
-
-      -- walls
-      if on_walls and close_proximity then
-        r <= "10";
-        g <= "10";
-        b <= "10";
-
-      elsif not on_ground and close_proximity then
-        r <= "10";
-        g <= "10";
-        b <= "10";
-
-      elsif on_ground and close_proximity then
-        r <= "01";
-        g <= "01";
-        b <= "01";
-      
-      elsif on_walls and false then
-        r <= "00";
-        g <= "10";
-        b <= "00";
-
-        -- grid
-      elsif on_ground and false then
-        r <= "00";
-        g <= "01";
-        b <= "00";
+      if py >= 240 then
+          r <= "01";
+          g <= "01";
+          b <= "01";
+      end if;
+      if py <= 240 then
+          r <= "01";
+          g <= "01";
+          b <= "00";
       end if;
 
-      -- player
-      if on_player then
-        r <= "10";
-        g <= "10";
-        b <= "00";
+      -- 1 x x
+      -- x x x
+      -- x x x
+      if proximity_check(0) = '1' then
+        if py < 320 and py > 160 and px >= 0 and px <= 214 then
+            r <= "10";
+            g <= "10";
+            b <= "01";
+        end if;
       end if;
+
+      -- x x 1
+      -- x x x
+      -- x x x
+      if proximity_check(2) = '1' then
+        if py < 320 and py > 160 and px >= 426 and px <= 640 then
+            r <= "10";
+            g <= "10";
+            b <= "01";
+        end if;
+      end if;
+
+      -- x 1 x
+      -- x x x
+      -- x x x
+      if proximity_check(1) = '1' then
+        if py < 320 and py > 160 and px >= 214 and px <= 426 then
+            r <= "10";
+            g <= "10";
+            b <= "01";
+        end if;
+      end if;
+
+      -- x x x
+      -- 1 x x
+      -- x x x
+      if proximity_check(3) = '1' then
+        if 640 * py < 480 * 640 - 480 * 107 and 640 * py > 480 * 107 and px >= 0 and px <= 107 then
+            r <= "10";
+            g <= "10";
+            b <= "01";
+        end if;
+        if 640 * py > 480 * px and 640 * py < 480 * 640 - 480 * px then
+          if px <= 214 and px >= 107 then
+            r <= "10";
+            g <= "10";
+            b <= "00";
+          end if;
+        end if;
+      end if;
+
+      -- x x x
+      -- x x 1
+      -- x x x
+      if proximity_check(5) = '1' then
+        if 640 * py < 480 * 640 - 480 * 107 and 640 * py > 480 * 107 and px <= 640 and px >= 640 - 107 then
+            r <= "10";
+            g <= "10";
+            b <= "01";
+        end if;
+        if 640 * py < 480 * px and 640 * py > 480 * 640 - 480 * px then
+          if px >= 426 and px <= 426 + 107 then
+            r <= "10";
+            g <= "10";
+            b <= "00";
+          end if;
+        end if;
+      end if;
+
+      -- x x x
+      -- x 1 x
+      -- x x x
+      if proximity_check(4) = '1' then
+        if 640 * py > 480 * 107 and 640 * py < 480 * 640 - 480 * 107 and px >= 107 and px <= 640 - 107 then
+            r <= "10";
+            g <= "10";
+            b <= "01";
+        end if;
+      end if;
+
+      -- x x x
+      -- x x x
+      -- 1 x x
+      if proximity_check(6) = '1' then
+        if 640 * py > 480 * px and 640 * py < 480 * 640 - 480 * px then
+          if px <= 214 / 2 then
+            r <= "10";
+            g <= "10";
+            b <= "00";
+          end if;
+        end if;
+      end if;
+
+      -- x x x
+      -- x x x
+      -- x x 1
+      if proximity_check(7) = '1' then
+        if 640 * py < 480 * px and 640 * py > 480 * 640 - 480 * px then
+          if px >= 426 + 214 / 2 then
+            r <= "10";
+            g <= "10";
+            b <= "00";
+          end if;
+        end if;
+      end if;
+
     end if;
   end process;
 
