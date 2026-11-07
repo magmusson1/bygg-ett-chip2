@@ -2,7 +2,7 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
-entity maze_game is
+entity tt_um_maze_game is
   port (
     clk    : in  std_logic;
     rst_n  : in  std_logic;
@@ -11,7 +11,7 @@ entity maze_game is
   );
 end entity;
 
-architecture rtl of maze_game is
+architecture rtl of tt_um_maze_game is
 
   -- GRID konstanter
   constant GRID_SIZE : integer := 8;
