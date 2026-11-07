@@ -161,8 +161,6 @@ begin
     g <= "00";
     b <= "00";
 
-    proximity_check <= "11111111";
-
     px := hpos - 144;
     py := vpos - 35;
 
@@ -184,12 +182,57 @@ begin
           case direction is
             when 0 =>
               light_ypos := ypos - 1;
+
+              proximity_check(0) <= maze(light_xpos - 1, light_ypos + 1);
+              proximity_check(1) <= maze(light_xpos, light_ypos + 1);
+              proximity_check(2) <= maze(light_xpos + 1, light_ypos + 1);
+
+              proximity_check(3) <= maze(light_xpos - 1, light_ypos);
+              proximity_check(4) <= maze(light_xpos, light_ypos);
+              proximity_check(5) <= maze(light_xpos + 1, light_ypos);
+
+              proximity_check(6) <= maze(light_xpos - 1, light_ypos - 1);
+              proximity_check(7) <= maze(light_xpos + 1, light_ypos - 1);
+
             when 1 => 
               light_xpos := xpos + 1;
+
+              proximity_check(0) <= maze(light_xpos + 1, light_ypos - 1);
+              proximity_check(1) <= maze(light_xpos + 1, light_ypos);
+              proximity_check(2) <= maze(light_xpos + 1, light_ypos + 1);
+
+              proximity_check(3) <= maze(light_xpos, light_ypos - 1);
+              proximity_check(4) <= maze(light_xpos, light_ypos);
+              proximity_check(5) <= maze(light_xpos, light_ypos + 1);
+
+              proximity_check(6) <= maze(light_xpos - 1, light_ypos - 1);
+              proximity_check(7) <= maze(light_xpos - 1, light_ypos + 1);
             when 2 =>
               light_ypos := ypos + 1;
+
+              proximity_check(0) <= maze(light_xpos + 1, light_ypos - 1);
+              proximity_check(1) <= maze(light_xpos, light_ypos - 1);
+              proximity_check(2) <= maze(light_xpos - 1, light_ypos - 1);
+
+              proximity_check(3) <= maze(light_xpos + 1, light_ypos);
+              proximity_check(4) <= maze(light_xpos, light_ypos);
+              proximity_check(5) <= maze(light_xpos - 1, light_ypos);
+
+              proximity_check(6) <= maze(light_xpos + 1, light_ypos + 1);
+              proximity_check(7) <= maze(light_xpos - 1, light_ypos + 1);
             when 3 =>
               light_xpos := xpos - 1;
+
+              proximity_check(0) <= maze(light_xpos - 1, light_ypos + 1);
+              proximity_check(1) <= maze(light_xpos - 1, light_ypos);
+              proximity_check(2) <= maze(light_xpos - 1, light_ypos - 1);
+
+              proximity_check(3) <= maze(light_xpos, light_ypos + 1);
+              proximity_check(4) <= maze(light_xpos, light_ypos);
+              proximity_check(5) <= maze(light_xpos, light_ypos - 1);
+
+              proximity_check(6) <= maze(light_xpos + 1, light_ypos + 1);
+              proximity_check(7) <= maze(light_xpos + 1, light_ypos - 1);
           end case;
 
           close_proximity := close_proximity or
@@ -235,6 +278,13 @@ begin
             g <= "10";
             b <= "01";
         end if;
+        if 640 * py > 480 * px and 640 * py < 480 * 640 - 480 * px then
+          if px >= 214 then
+            r <= "10";
+            g <= "10";
+            b <= "00";
+          end if;
+        end if;
       end if;
 
       -- x x 1
@@ -245,6 +295,13 @@ begin
             r <= "10";
             g <= "10";
             b <= "01";
+        end if;
+        if 640 * py < 480 * px and 640 * py > 480 * 640 - 480 * px then
+          if px <= 426 then
+            r <= "10";
+            g <= "10";
+            b <= "00";
+          end if;
         end if;
       end if;
 
