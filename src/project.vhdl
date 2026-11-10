@@ -3,16 +3,16 @@ library ieee;
   use ieee.numeric_std.all;
 
 entity tt_um_maze_game is
-    port (
-        ui_in   : in  std_logic_vector(7 downto 0);
-        uo_out  : out std_logic_vector(7 downto 0);
-        uio_in  : in  std_logic_vector(7 downto 0);
-        uio_out : out std_logic_vector(7 downto 0);
-        uio_oe  : out std_logic_vector(7 downto 0);
-        ena     : in  std_logic;
-        clk     : in  std_logic;
-        rst_n   : in  std_logic
-    );
+  port (
+    ui_in   : in  std_logic_vector(7 downto 0);
+    uo_out  : out std_logic_vector(7 downto 0);
+    uio_in  : in  std_logic_vector(7 downto 0);
+    uio_out : out std_logic_vector(7 downto 0);
+    uio_oe  : out std_logic_vector(7 downto 0);
+    ena     : in  std_logic;
+    clk     : in  std_logic;
+    rst_n   : in  std_logic
+  );
 end entity;
 
 architecture rtl of tt_um_maze_game is
@@ -44,6 +44,8 @@ architecture rtl of tt_um_maze_game is
   signal proximity_check : std_logic_vector(7 downto 0);
 
   type matrix is array (0 to 7, 0 to 7) of std_logic;
+
+  type render_array is array (0 to 7) of std_logic_vector(2 downto 0);
 
   constant maze : matrix := (
     0 => ('0', '1', '0', '0', '0', '1', '0', '0'),
@@ -128,8 +130,8 @@ begin
         end if;
 
         if maze(next_x, next_y) = '0' then
-            xpos <= next_x;
-            ypos <= next_y;
+          xpos <= next_x;
+          ypos <= next_y;
         else
           xpos <= xpos;
           ypos <= ypos;
@@ -155,6 +157,114 @@ begin
     variable on_player : boolean;
 
     variable close_proximity : boolean;
+
+    variable blocks : render_array;
+
+    function flashlight(
+        xpos      : integer;
+        ypos      : integer;
+        direction : integer
+      ) return render_array is
+
+      variable blocks : render_array := (others => "111");
+      variable dx, dy : integer;
+      variable sx, sy : integer;
+      variable cx, cy : integer;
+      variable lx, ly : integer;
+      variable rx, ry : integer;
+
+    begin
+      case direction is
+        when 0 =>
+          dx := 0;
+          dy := - 1;
+          sx := 1;
+          sy := 0;
+        when 1 =>
+          dx := 1;
+          dy := 0;
+          sx := 0;
+          sy := 1;
+        when 2 =>
+          dx := 0;
+          dy := 1;
+          sx := - 1;
+          sy := 0;
+        when others =>
+          dx := - 1;
+          dy := 0;
+          sx := 0;
+          sy := - 1;
+      end case;
+
+      for depth in 0 to 7 loop
+
+        cx := xpos + dx * depth;
+        cy := ypos + dy * depth;
+
+        -- Vägg eller kartgräns framför oss
+        if cx < 0 or cx > 7 or
+           cy < 0 or cy > 7 then
+          exit;
+        end if;
+
+        -- Mittenkolumnen
+        blocks(depth)(1) := maze(cx, cy);
+
+        -- Sluta vid första väggen
+        if maze(cx, cy) = '1' then
+          exit;
+        end if;
+
+        -- Vänster sida
+        lx := cx - sx;
+        ly := cy - sy;
+
+        if lx >= 0 and lx <= 7 and
+           ly >= 0 and ly <= 7 then
+          blocks(depth)(2) := maze(lx, ly);
+        end if;
+
+        -- Höger sida
+        rx := cx + sx;
+        ry := cy + sy;
+
+        if rx >= 0 and rx <= 7 and
+           ry >= 0 and ry <= 7 then
+          blocks(depth)(0) := maze(rx, ry);
+        end if;
+
+      end loop;
+
+      return blocks;
+    end function;
+
+    procedure render_blocks(
+        signal blocks : in  render_array;
+        signal px     : in  integer;
+        signal py     : in  integer;
+        signal r      : out unsigned(1 downto 0);
+        signal g      : out unsigned(1 downto 0);
+        signal b      : out unsigned(1 downto 0)
+      ) is
+    begin
+
+      for lr in - 1 to 1 loop
+        for depth in 7 to 1 loop
+          if blocks(depth)(lr + 1) = '1' then
+            if px * (1 + depth) > 320 * (1 + depth) - 320 + lr * 2 * 320 
+            and px * (1 + depth) > 320 * (1 + depth) + 320 + lr * 2 * 320
+            and py * (1 + depth) > 240 * (1 + depth) - 240 
+            and py * (1 + depth) > 240 * (1 + depth) + 240 then
+                r <= "10";
+                g <= "10";
+                b <= "01";
+            end if;
+          end if;
+        end loop;
+      end loop;
+
+    end procedure;
 
   begin
     r <= "00";
@@ -182,57 +292,12 @@ begin
           case direction is
             when 0 =>
               light_ypos := ypos - 1;
-
-              proximity_check(0) <= maze(light_xpos - 1, light_ypos + 1);
-              proximity_check(1) <= maze(light_xpos, light_ypos + 1);
-              proximity_check(2) <= maze(light_xpos + 1, light_ypos + 1);
-
-              proximity_check(3) <= maze(light_xpos - 1, light_ypos);
-              proximity_check(4) <= maze(light_xpos, light_ypos);
-              proximity_check(5) <= maze(light_xpos + 1, light_ypos);
-
-              proximity_check(6) <= maze(light_xpos - 1, light_ypos - 1);
-              proximity_check(7) <= maze(light_xpos + 1, light_ypos - 1);
-
-            when 1 => 
+            when 1 =>
               light_xpos := xpos + 1;
-
-              proximity_check(0) <= maze(light_xpos + 1, light_ypos - 1);
-              proximity_check(1) <= maze(light_xpos + 1, light_ypos);
-              proximity_check(2) <= maze(light_xpos + 1, light_ypos + 1);
-
-              proximity_check(3) <= maze(light_xpos, light_ypos - 1);
-              proximity_check(4) <= maze(light_xpos, light_ypos);
-              proximity_check(5) <= maze(light_xpos, light_ypos + 1);
-
-              proximity_check(6) <= maze(light_xpos - 1, light_ypos - 1);
-              proximity_check(7) <= maze(light_xpos - 1, light_ypos + 1);
             when 2 =>
               light_ypos := ypos + 1;
-
-              proximity_check(0) <= maze(light_xpos + 1, light_ypos - 1);
-              proximity_check(1) <= maze(light_xpos, light_ypos - 1);
-              proximity_check(2) <= maze(light_xpos - 1, light_ypos - 1);
-
-              proximity_check(3) <= maze(light_xpos + 1, light_ypos);
-              proximity_check(4) <= maze(light_xpos, light_ypos);
-              proximity_check(5) <= maze(light_xpos - 1, light_ypos);
-
-              proximity_check(6) <= maze(light_xpos + 1, light_ypos + 1);
-              proximity_check(7) <= maze(light_xpos - 1, light_ypos + 1);
             when 3 =>
               light_xpos := xpos - 1;
-
-              proximity_check(0) <= maze(light_xpos - 1, light_ypos + 1);
-              proximity_check(1) <= maze(light_xpos - 1, light_ypos);
-              proximity_check(2) <= maze(light_xpos - 1, light_ypos - 1);
-
-              proximity_check(3) <= maze(light_xpos, light_ypos + 1);
-              proximity_check(4) <= maze(light_xpos, light_ypos);
-              proximity_check(5) <= maze(light_xpos, light_ypos - 1);
-
-              proximity_check(6) <= maze(light_xpos + 1, light_ypos + 1);
-              proximity_check(7) <= maze(light_xpos + 1, light_ypos - 1);
           end case;
 
           close_proximity := close_proximity or
@@ -258,136 +323,21 @@ begin
 
     if vis = '1' then
 
+       -- tak och golv
       if py >= 240 then
-          r <= "01";
-          g <= "01";
-          b <= "01";
+        r <= "01";
+        g <= "01";
+        b <= "01";
       end if;
       if py <= 240 then
-          r <= "01";
-          g <= "01";
-          b <= "00";
+        r <= "01";
+        g <= "01";
+        b <= "00";
       end if;
 
-      -- 1 x x
-      -- x x x
-      -- x x x
-      if proximity_check(0) = '1' then
-        if py < 320 and py > 160 and px >= 0 and px <= 214 then
-            r <= "10";
-            g <= "10";
-            b <= "01";
-        end if;
-        if 640 * py > 480 * px and 640 * py < 480 * 640 - 480 * px then
-          if px >= 214 then
-            r <= "10";
-            g <= "10";
-            b <= "00";
-          end if;
-        end if;
-      end if;
+      blocks := flashlight(xpos, ypos, direction);
 
-      -- x x 1
-      -- x x x
-      -- x x x
-      if proximity_check(2) = '1' then
-        if py < 320 and py > 160 and px >= 426 and px <= 640 then
-            r <= "10";
-            g <= "10";
-            b <= "01";
-        end if;
-        if 640 * py < 480 * px and 640 * py > 480 * 640 - 480 * px then
-          if px <= 426 then
-            r <= "10";
-            g <= "10";
-            b <= "00";
-          end if;
-        end if;
-      end if;
-
-      -- x 1 x
-      -- x x x
-      -- x x x
-      if proximity_check(1) = '1' then
-        if py < 320 and py > 160 and px >= 214 and px <= 426 then
-            r <= "10";
-            g <= "10";
-            b <= "01";
-        end if;
-      end if;
-
-      -- x x x
-      -- 1 x x
-      -- x x x
-      if proximity_check(3) = '1' then
-        if 640 * py < 480 * 640 - 480 * 107 and 640 * py > 480 * 107 and px >= 0 and px <= 107 then
-            r <= "10";
-            g <= "10";
-            b <= "01";
-        end if;
-        if 640 * py > 480 * px and 640 * py < 480 * 640 - 480 * px then
-          if px <= 214 and px >= 107 then
-            r <= "10";
-            g <= "10";
-            b <= "00";
-          end if;
-        end if;
-      end if;
-
-      -- x x x
-      -- x x 1
-      -- x x x
-      if proximity_check(5) = '1' then
-        if 640 * py < 480 * 640 - 480 * 107 and 640 * py > 480 * 107 and px <= 640 and px >= 640 - 107 then
-            r <= "10";
-            g <= "10";
-            b <= "01";
-        end if;
-        if 640 * py < 480 * px and 640 * py > 480 * 640 - 480 * px then
-          if px >= 426 and px <= 426 + 107 then
-            r <= "10";
-            g <= "10";
-            b <= "00";
-          end if;
-        end if;
-      end if;
-
-      -- x x x
-      -- x 1 x
-      -- x x x
-      if proximity_check(4) = '1' then
-        if 640 * py > 480 * 107 and 640 * py < 480 * 640 - 480 * 107 and px >= 107 and px <= 640 - 107 then
-            r <= "10";
-            g <= "10";
-            b <= "01";
-        end if;
-      end if;
-
-      -- x x x
-      -- x x x
-      -- 1 x x
-      if proximity_check(6) = '1' then
-        if 640 * py > 480 * px and 640 * py < 480 * 640 - 480 * px then
-          if px <= 214 / 2 then
-            r <= "10";
-            g <= "10";
-            b <= "00";
-          end if;
-        end if;
-      end if;
-
-      -- x x x
-      -- x x x
-      -- x x 1
-      if proximity_check(7) = '1' then
-        if 640 * py < 480 * px and 640 * py > 480 * 640 - 480 * px then
-          if px >= 426 + 214 / 2 then
-            r <= "10";
-            g <= "10";
-            b <= "00";
-          end if;
-        end if;
-      end if;
+      render_blocks(blocks, px, py, r, g, b);
 
     end if;
   end process;
